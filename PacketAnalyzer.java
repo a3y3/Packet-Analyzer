@@ -1,20 +1,31 @@
 import java.io.*;
-import java.util.Scanner;
 
 class PacketAnalyzer {
     private File dataFile;
-    byte buffer[] = new byte[1024];
+    private int[] buffer;
 
     PacketAnalyzer(File dataFile) {
         this.dataFile = dataFile;
+        int length = (int) dataFile.length();
+        this.buffer = new int[length];
     }
 
     void analyze() throws IOException {
-        DataInputStream  in =
+        DataInputStream in =
                 new DataInputStream(new FileInputStream(dataFile));
-        while(in.read(buffer) != -1){
-            byte networkByte = buffer[0];
-            System.out.print(networkByte + " ");
+        fillArray(in);
+        int i = 0;
+        while (i < buffer.length) {
+            System.out.println(buffer[i]);
+            i++;
+        }
+    }
+
+    private void fillArray(DataInputStream in) throws IOException {
+        int b;
+        int i = 0;
+        while ((b = in.read()) != -1) {
+            buffer[i++] = b;
         }
     }
 
@@ -30,7 +41,7 @@ class pktanalyzer {
             }
             PacketAnalyzer packetAnalyzer = new PacketAnalyzer(file);
             packetAnalyzer.analyze();
-        }catch (ArrayIndexOutOfBoundsException a){
+        } catch (ArrayIndexOutOfBoundsException a) {
             System.err.println("Usage: java pktanalyzer <file>");
         }
     }
