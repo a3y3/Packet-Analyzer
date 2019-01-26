@@ -1,30 +1,16 @@
 import java.io.*;
-import java.math.BigInteger;
 
 class PacketAnalyzer {
-    private File dataFile;
-    private int[] buffer;
-    private int pointer;
     private DataInputStream in;
     private int length;
 
     PacketAnalyzer(File dataFile) throws FileNotFoundException {
-        this.dataFile = dataFile;
         this.length = (int) dataFile.length();
-        this.buffer = new int[length];
         this.in = new DataInputStream(new FileInputStream(dataFile));
     }
 
     void analyze() throws IOException {
         readEthernetHeader();
-    }
-
-    private void fillArray(DataInputStream in) throws IOException {
-        int b;
-        int i = 0;
-        while ((b = in.read()) != -1) {
-            buffer[i++] = b;
-        }
     }
 
     private String integerToHex(int value){
@@ -72,7 +58,7 @@ class PacketAnalyzer {
         }
     }
 
-    private void readEthernetLengthOrType() throws IOException { //TODO length OR type?
+    private void readEthernetLengthOrType() throws IOException {
         System.out.print("ETHER: Ethertype = ");
         int counter = 0;
         while (counter < 2){
