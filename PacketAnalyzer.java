@@ -11,11 +11,12 @@ class PacketAnalyzer {
 
     void analyze() throws IOException {
         readEthernetHeader();
+        readIPDatagram();
     }
 
-    private String integerToHex(int value){
+    private String integerToHex(int value) {
         String hex = Integer.toHexString(value);
-        if (hex.length() == 1){
+        if (hex.length() == 1) {
             hex = "0" + hex;
         }
         return hex.toUpperCase();
@@ -61,13 +62,36 @@ class PacketAnalyzer {
     private void readEthernetLengthOrType() throws IOException {
         System.out.print("ETHER: Ethertype = ");
         int counter = 0;
-        while (counter < 2){
-            int destination = in.read();
-            System.out.print(integerToHex(destination));
+        while (counter < 2) {
+            int nextByte = in.read();
+            System.out.print(integerToHex(nextByte));
             counter++;
         }
     }
 
+    private void readIPDatagram() throws IOException {
+        System.out.println("IP: ----- IP Header -----");
+        System.out.println("IP:");
+        readIPHeader();
+
+    }
+
+    private void readIPHeader() throws IOException {
+        readIPVersionAndLength();
+    }
+
+    private void readIPVersionAndLength() throws IOException {
+        System.out.print("IP: Version = ");
+        int nextByte = in.read();
+        int version = nextByte >> 4;
+        System.out.print(integerToHex(version));
+
+        int headerLength = nextByte & 0b00001111;
+        headerLength *= 4; //(* 32/8 bytes) = (* 4 bytes)
+        System.out.println();
+        System.out.print("IP: Header length = " + headerLength);
+        System.out.print(" bytes");
+    }
 }
 
 class pktanalyzer {
