@@ -42,7 +42,14 @@ class PacketAnalyzer {
 
         readEthernetDestination();
         System.out.println();
+
         readEthernetSource();
+        System.out.println();
+
+        readEthernetLengthOrType();
+        System.out.println();
+
+        System.out.println("ETHER:");
     }
 
     private void readEthernetDestination() throws IOException {
@@ -65,8 +72,14 @@ class PacketAnalyzer {
         }
     }
 
-    private void readEthernetLengthOrType() { //TODO length OR type?
-
+    private void readEthernetLengthOrType() throws IOException { //TODO length OR type?
+        System.out.print("ETHER: Ethertype = ");
+        int counter = 0;
+        while (counter < 2){
+            int destination = in.read();
+            System.out.print(integerToHex(destination));
+            counter++;
+        }
     }
 
 }
