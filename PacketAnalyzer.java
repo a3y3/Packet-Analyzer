@@ -11,7 +11,16 @@ class PacketAnalyzer {
 
     void analyze() throws IOException {
         readEthernetHeader();
-        readIPDatagram();
+        int protocol = readIPDatagram();
+        if (protocol == 1){
+            readICMP();
+        }
+        else if (protocol == 6){
+            readTCP();
+        }
+        else if (protocol == 17){
+            readUDP();
+        }
     }
 
     private String integerToHex(int value) {
@@ -69,10 +78,10 @@ class PacketAnalyzer {
         }
     }
 
-    private void readIPDatagram() throws IOException {
+    private int readIPDatagram() throws IOException {
         System.out.println("IP: ----- IP Header -----");
         System.out.println("IP:");
-        int protocol = readIPHeader();
+        return readIPHeader();
 
     }
 
@@ -211,6 +220,7 @@ class PacketAnalyzer {
             counter++;
         }
     }
+
     private void readSourceIP() throws IOException {
         System.out.print("IP: Source address = " );
         readFourIPBytes();
@@ -234,6 +244,17 @@ class PacketAnalyzer {
         }
     }
 
+    private void readICMP(){
+
+    }
+
+    private void readTCP(){
+
+    }
+
+    private void readUDP(){
+
+    }
 }
 
 class pktanalyzer {
