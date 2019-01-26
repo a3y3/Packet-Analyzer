@@ -1,24 +1,22 @@
 import java.io.*;
+import java.math.BigInteger;
 
 class PacketAnalyzer {
     private File dataFile;
     private int[] buffer;
+    private int pointer;
+    private DataInputStream in;
+    private int length;
 
-    PacketAnalyzer(File dataFile) {
+    PacketAnalyzer(File dataFile) throws FileNotFoundException {
         this.dataFile = dataFile;
-        int length = (int) dataFile.length();
+        this.length = (int) dataFile.length();
         this.buffer = new int[length];
+        this.in = new DataInputStream(new FileInputStream(dataFile));
     }
 
     void analyze() throws IOException {
-        DataInputStream in =
-                new DataInputStream(new FileInputStream(dataFile));
-        fillArray(in);
-        int i = 0;
-        while (i < buffer.length) {
-            System.out.println(buffer[i]);
-            i++;
-        }
+        readEthernetHeader();
     }
 
     private void fillArray(DataInputStream in) throws IOException {
@@ -29,18 +27,60 @@ class PacketAnalyzer {
         }
     }
 
+    private String integerToHex(int value){
+        String hex = Integer.toHexString(value);
+        if (hex.length() == 1){
+            hex = "0" + hex;
+        }
+        return hex.toUpperCase();
+    }
+
+    private void readEthernetHeader() throws IOException {
+        System.out.println("ETHER: ----- Ether Header -----");
+        System.out.println("ETHER:");
+        System.out.println("ETHER: Packet size = " + length + " bytes");
+
+        readEthernetDestination();
+        System.out.println();
+        readEthernetSource();
+    }
+
+    private void readEthernetDestination() throws IOException {
+        System.out.print("ETHER: Destination = ");
+        readSixEthernetBytes();
+    }
+
+    private void readEthernetSource() throws IOException {
+        System.out.print("ETHER: Source = ");
+        readSixEthernetBytes();
+    }
+
+    private void readSixEthernetBytes() throws IOException {
+        int counter = 0;
+        while (counter < 6) {
+            int destination = in.read();
+            System.out.print(integerToHex(destination));
+            System.out.print(":");
+            counter++;
+        }
+    }
+
+    private void readEthernetLengthOrType() { //TODO length OR type?
+
+    }
+
 }
 
 class pktanalyzer {
     public static void main(String[] args) throws IOException {
+        String fileName;
+        File file;
         try {
-            String fileName = args[0];
-            File file = new File(fileName);
-            if (!file.exists()) {
-                throw new FileNotFoundException();
-            }
+            fileName = args[0];
+            file = new File(fileName);
             PacketAnalyzer packetAnalyzer = new PacketAnalyzer(file);
             packetAnalyzer.analyze();
+
         } catch (ArrayIndexOutOfBoundsException a) {
             System.err.println("Usage: java pktanalyzer <file>");
         }
