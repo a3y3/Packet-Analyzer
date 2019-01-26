@@ -110,7 +110,7 @@ class PacketAnalyzer {
             readOptions(headerLength);
         }
         else{
-            System.out.println("No options");
+            System.out.println("IP: No options");
         }
 
         System.out.println("IP:");
@@ -135,9 +135,9 @@ class PacketAnalyzer {
         System.out.println("IP: Type of service = " + integerToHex(nextByte));
     }
 
-    private void read2BytesForIP(int[] data) throws IOException {
+    private void readNBytes(int[] data, int n) throws IOException {
         int counter = 0;
-        while (counter < 2) {
+        while (counter < n) {
             data[counter] = in.read();
             counter++;
         }
@@ -147,9 +147,16 @@ class PacketAnalyzer {
         return (data[0] << 8) + data[1];
     }
 
+    private long add4HexBytes(int[] data){
+        return ((long)data [0] << 24 ) +
+                ((long)data[1] << 16 ) +
+                ((long)data[2] << 8 ) +
+                ((long)data[3]);
+    }
+
     private void readIPTotalLength() throws IOException {
         int[] data = new int[2];
-        read2BytesForIP(data);
+        readNBytes(data,data.length);
 
         int finalNumber = add2HexBytes(data);
         System.out.println("IP: Total length = " + finalNumber + " bytes");
@@ -158,14 +165,14 @@ class PacketAnalyzer {
 
     private void readIPIdentification() throws IOException {
         int[] data = new int[2];
-        read2BytesForIP(data);
+        readNBytes(data, data.length);
         int finalNumber = add2HexBytes(data);
         System.out.println("IP: Identification = " + finalNumber);
     }
 
     private void readFlagsAndFragmentOffset() throws IOException {
         int[] data = new int[2];
-        read2BytesForIP(data);
+        readNBytes(data, data.length);
         int flags = data[0] >> 5; //First 3 bits
         System.out.print("IP: Flags = 0x" + flags + "\n");
         String fragmentPresent = ((flags & 0b010) == 0b010) ? ".1.. do not " +
@@ -206,7 +213,7 @@ class PacketAnalyzer {
 
     private void readChecksum() throws IOException {
         int[] data = new int[2];
-        read2BytesForIP(data);
+        readNBytes(data, data.length);
         int result = add2HexBytes(data);
         System.out.println("IP: Header checksum = " + integerToHex(result));
     }
@@ -248,12 +255,47 @@ class PacketAnalyzer {
 
     }
 
-    private void readTCP(){
+    private void readTCP() throws IOException {
+        System.out.println("TCP: ----- TCP Header -----");
+        System.out.println("TCP:");
+        readTCPSource();
 
+        readTCPDestination();
+
+        readTCPSequenceNumber();
+
+        readTCPAcknowledgementNumber();
     }
 
     private void readUDP(){
 
+    }
+
+    private void readTCPSource() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("Source port = " + result);
+    }
+
+    private void readTCPDestination() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("Destination port = " + result);
+    }
+
+    private void readTCPSequenceNumber() throws IOException {
+        int[] data = new int[4];
+        readNBytes(data, 4);
+        long result = add4HexBytes(data);
+        System.out.println("TCP: Sequence number = " + result);
+    }
+    private void readTCPAcknowledgementNumber() throws IOException {
+        int[] data = new int[4];
+        readNBytes(data, data.length);
+        long result = add4HexBytes(data);
+        System.out.println("TCP: Acknowledgement number = " + result);
     }
 }
 
