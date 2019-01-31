@@ -3,6 +3,7 @@ import java.io.*;
 class PacketAnalyzer {
     private DataInputStream in;
     private int length;
+    private int NUM_BYTES_TO_READ = 64;
 
     PacketAnalyzer(File dataFile) throws FileNotFoundException {
         this.length = (int) dataFile.length();
@@ -12,13 +13,11 @@ class PacketAnalyzer {
     void analyze() throws IOException {
         readEthernetHeader();
         int protocol = readIPDatagram();
-        if (protocol == 1){
+        if (protocol == 1) {
             readICMP();
-        }
-        else if (protocol == 6){
+        } else if (protocol == 6) {
             readTCP();
-        }
-        else if (protocol == 17){
+        } else if (protocol == 17) {
             readUDP();
         }
     }
@@ -106,10 +105,9 @@ class PacketAnalyzer {
 
         readDestinationIP();
 
-        if (headerLength > 20){
+        if (headerLength > 20) {
             readOptions(headerLength);
-        }
-        else{
+        } else {
             System.out.println("IP: No options");
         }
 
@@ -143,20 +141,20 @@ class PacketAnalyzer {
         }
     }
 
-    private int add2HexBytes(int[] data){
+    private int add2HexBytes(int[] data) {
         return (data[0] << 8) + data[1];
     }
 
-    private long add4HexBytes(int[] data){
-        return ((long)data [0] << 24 ) +
-                ((long)data[1] << 16 ) +
-                ((long)data[2] << 8 ) +
-                ((long)data[3]);
+    private long add4HexBytes(int[] data) {
+        return ((long) data[0] << 24) +
+                ((long) data[1] << 16) +
+                ((long) data[2] << 8) +
+                ((long) data[3]);
     }
 
     private void readIPTotalLength() throws IOException {
         int[] data = new int[2];
-        readNBytes(data,data.length);
+        readNBytes(data, data.length);
 
         int finalNumber = add2HexBytes(data);
         System.out.println("IP: Total length = " + finalNumber + " bytes");
@@ -180,14 +178,14 @@ class PacketAnalyzer {
                 ".0.. fragment";
         String fragment = ((flags & 0b001) == 1) ? "..1. More fragments" :
                 "..0. Last fragment";
-        System.out.println("IP: \t" +  fragmentPresent);
+        System.out.println("IP: \t" + fragmentPresent);
         System.out.println("IP: \t" + fragment);
 
         int fragmentOffset = data[0] & 0b00011111;
         fragmentOffset &= 5;
         fragmentOffset |= data[1];
 
-        System.out.println("IP: Fragment offset = "+ fragmentOffset +" bytes");
+        System.out.println("IP: Fragment offset = " + fragmentOffset + " bytes");
     }
 
     private void readTTL() throws IOException {
@@ -199,13 +197,11 @@ class PacketAnalyzer {
     private int readProtocol() throws IOException {
         int nextByte = in.read();
         System.out.print("IP: Protocol = " + nextByte);
-        if (nextByte == 1){
+        if (nextByte == 1) {
             System.out.println(" (ICMP)");
-        }
-        else if (nextByte == 6){
+        } else if (nextByte == 6) {
             System.out.println(" (TCP: )");
-        }
-        else if (nextByte == 17){
+        } else if (nextByte == 17) {
             System.out.println(" (UDP)");
         }
         return nextByte;
@@ -229,13 +225,13 @@ class PacketAnalyzer {
     }
 
     private void readSourceIP() throws IOException {
-        System.out.print("IP: Source address = " );
+        System.out.print("IP: Source address = ");
         readFourIPBytes();
         System.out.println();
     }
 
     private void readDestinationIP() throws IOException {
-        System.out.print("IP: Destination address = " );
+        System.out.print("IP: Destination address = ");
         readFourIPBytes();
         System.out.println();
     }
@@ -245,14 +241,32 @@ class PacketAnalyzer {
         System.out.println("Reading " + bytesToRead + " bytes, but not " +
                 "displaying yet!");
         int counter = 0;
-        while (counter < bytesToRead){
+        while (counter < bytesToRead) {
             in.read();
-            counter ++;
+            counter++;
         }
     }
 
-    private void readICMP(){
+    private void readICMP() throws IOException {
+        System.out.println("ICMP: ----- ICMP Header -----\n" +
+                "ICMP:");
+        readICMPType();
+        readICMPCode();
+        readICMPChecksum();
+    }
 
+    private void readICMPType() throws IOException {
+        System.out.println("ICMP: Type = " + in.read());
+    }
+
+    private void readICMPCode() throws IOException {
+        System.out.println("ICMP: Code = " + in.read());
+    }
+
+    private void readICMPChecksum() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        System.out.println("ICMP: Checksum = 0x" + integerToHex(add2HexBytes(data)));
     }
 
     private void readTCP() throws IOException {
@@ -272,18 +286,56 @@ class PacketAnalyzer {
 
         readTCPChecksum();
 
-        if (URGSet){
+        if (URGSet) {
             readTCPURG();
-        }
-        else {
+        } else {
             System.out.println("TCP: Urgent pointer = 0");
         }
 
-
+        readData("TCP");
     }
 
-    private void readUDP(){
+    private void readUDP() throws IOException {
+        System.out.println("UDP:  ----- UDP Header -----");
+        System.out.println("UDP: ");
+        readUDPSource();
 
+        readUDPDestination();
+
+        readUDPLength();
+
+        readUDPChecksum();
+
+        System.out.println("UDP:");
+        readData("UDP");
+    }
+
+    private void readUDPSource() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("UDP: Source port = " + result);
+    }
+
+    private void readUDPDestination() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("UDP: Destination port = " + result);
+    }
+
+    private void readUDPLength() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("UDP: Length = " + result);
+    }
+
+    private void readUDPChecksum() throws IOException {
+        int[] data = new int[2];
+        readNBytes(data, data.length);
+        int result = add2HexBytes(data);
+        System.out.println("UDP: Checksum = 0x" + integerToHex(result));
     }
 
     private void readTCPSource() throws IOException {
@@ -306,6 +358,7 @@ class PacketAnalyzer {
         long result = add4HexBytes(data);
         System.out.println("TCP: Sequence number = " + result);
     }
+
     private void readTCPAcknowledgementNumber() throws IOException {
         int[] data = new int[4];
         readNBytes(data, data.length);
@@ -317,7 +370,7 @@ class PacketAnalyzer {
         boolean isURGSet;
         int offsetAndFlag = in.read();
         int offset = offsetAndFlag >> 4;
-        System.out.println("TCP: Data offset = "+ offset + "bytes");
+        System.out.println("TCP: Data offset = " + offset + "bytes");
 
         int flags = in.read();
         int[] data = new int[2];
@@ -325,32 +378,32 @@ class PacketAnalyzer {
         data[1] = flags;
         System.out.println("TCP: Flags = 0x" + integerToHex(add2HexBytes(data)));
         int NS = data[0];
-        String NSPresent = NS == 1? "1 .... .... = Concealment Protection set" :
+        String NSPresent = NS == 1 ? "1 .... .... = Concealment Protection set" :
                 "0 .... .... = No CE set";
         int CWR = flags >> 7 & 0b1;
-        String CWRPresent = CWR == 1? "1... .... = CWR Flag" : "0..." +
+        String CWRPresent = CWR == 1 ? "1... .... = CWR Flag" : "0..." +
                 " .... = No CWR";
         int ECE = flags >> 6 & 0b1;
-        String ECEPresent = ECE == 1? ".1.. .... = ECE Flag" : ".0.." +
+        String ECEPresent = ECE == 1 ? ".1.. .... = ECE Flag" : ".0.." +
                 " .... = No ECE";
         int URG = flags >> 5 & 0b1;
-        String URGPresent = URG == 1? "..1. .... = Urgent Pointer" : "..0." +
+        String URGPresent = URG == 1 ? "..1. .... = Urgent Pointer" : "..0." +
                 " .... = No Urgent Pointer";
         isURGSet = URG == 1;
         int ACK = flags >> 4 & 0b1;
-        String ACKPresent = ACK == 1? "...1 .... = Acknowledgement " : "...0 " +
+        String ACKPresent = ACK == 1 ? "...1 .... = Acknowledgement " : "...0 " +
                 ".... = No Acknowledgement";
         int PSH = flags >> 3 & 0b1;
-        String PSHPresent = PSH == 1? ".... 1... = Push " : ".... " +
+        String PSHPresent = PSH == 1 ? ".... 1... = Push " : ".... " +
                 "0... = No Push";
-        int RST = flags >> 2 &0b1;
-        String RSTPresent = RST == 1? ".... .1.. = Reset" : ".... " +
+        int RST = flags >> 2 & 0b1;
+        String RSTPresent = RST == 1 ? ".... .1.. = Reset" : ".... " +
                 ".0.. = No Reset";
         int SYN = flags >> 1 & 0b1;
-        String SYNPresent = SYN == 1? ".... ..1. = SYN" : ".... " +
+        String SYNPresent = SYN == 1 ? ".... ..1. = SYN" : ".... " +
                 "..0. = No SYN";
-        int FIN = flags &0b1;
-        String FINPresent = FIN == 1? ".... ...1 = FIN" : ".... " +
+        int FIN = flags & 0b1;
+        String FINPresent = FIN == 1 ? ".... ...1 = FIN" : ".... " +
                 "...0 = No FIN";
         printFlag(NSPresent);
         printFlag(CWRPresent);
@@ -371,19 +424,35 @@ class PacketAnalyzer {
     private void readTCPWindow() throws IOException {
         int[] data = new int[2];
         readNBytes(data, data.length);
-        System.out.println("TCP: Window = "+add2HexBytes(data));
+        System.out.println("TCP: Window = " + add2HexBytes(data));
     }
 
     private void readTCPChecksum() throws IOException {
         int[] data = new int[2];
         readNBytes(data, data.length);
-        System.out.println("TCP: Checksum = 0x"+integerToHex(add2HexBytes(data)));
+        System.out.println("TCP: Checksum = 0x" + integerToHex(add2HexBytes(data)));
     }
 
     private void readTCPURG() throws IOException {
         int[] data = new int[2];
         readNBytes(data, data.length);
-        System.out.println("TCP: URG = 0x"+(add2HexBytes(data)));
+        System.out.println("TCP: URG = 0x" + (add2HexBytes(data)));
+    }
+
+    private void readData(String protocol) throws IOException {
+        int dataCounter = 0;
+        int rowCounter;
+        System.out.println(protocol + ": Data: (first 64 bytes)");
+        while (dataCounter <= NUM_BYTES_TO_READ) {
+            System.out.print(protocol + ": ");
+            for (rowCounter = 0; rowCounter < 8; rowCounter++) {
+                int[] data = new int[2];
+                readNBytes(data, data.length);
+                dataCounter += 2;
+                System.out.print(integerToHex(add2HexBytes(data)) + " ");
+            }
+            System.out.println();
+        }
     }
 }
 
