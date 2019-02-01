@@ -190,7 +190,7 @@ class PacketAnalyzer {
 
     private void readTTL() throws IOException {
         int nextByte = in.read();
-        System.out.println("IP: Time to live = " + integerToHex(nextByte) +
+        System.out.println("IP: Time to live = " + nextByte +
                 " seconds /hops");
     }
 
@@ -200,7 +200,7 @@ class PacketAnalyzer {
         if (nextByte == 1) {
             System.out.println(" (ICMP)");
         } else if (nextByte == 6) {
-            System.out.println(" (TCP: )");
+            System.out.println(" (TCP)");
         } else if (nextByte == 17) {
             System.out.println(" (UDP)");
         }
@@ -211,7 +211,7 @@ class PacketAnalyzer {
         int[] data = new int[2];
         readNBytes(data, data.length);
         int result = add2HexBytes(data);
-        System.out.println("IP: Header checksum = " + integerToHex(result));
+        System.out.println("IP: Header checksum = 0x" + integerToHex(result));
     }
 
     private void readFourIPBytes() throws IOException {
@@ -442,12 +442,17 @@ class PacketAnalyzer {
     private void readData(String protocol) throws IOException {
         int dataCounter = 0;
         int rowCounter;
+        boolean EOF = false;
         System.out.println(protocol + ": Data: (first 64 bytes)");
-        while (dataCounter <= NUM_BYTES_TO_READ) {
+        while (dataCounter <= NUM_BYTES_TO_READ && !EOF) {
             System.out.print(protocol + ": ");
             for (rowCounter = 0; rowCounter < 8; rowCounter++) {
                 int[] data = new int[2];
                 readNBytes(data, data.length);
+                if(data[0] == -1 || data[1] == -1) {
+                    EOF = true;
+                    break;
+                }
                 dataCounter += 2;
                 System.out.print(integerToHex(add2HexBytes(data)) + " ");
             }
