@@ -461,7 +461,7 @@ class PacketAnalyzer {
     }
 }
 
-class pktanalyzer {
+public class pktanalyzer {
     public static void main(String[] args) throws IOException {
         String fileName;
         File file;
